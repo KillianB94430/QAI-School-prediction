@@ -1,5 +1,4 @@
 import pandas as pd
-import joblib
 import mlflow.pyfunc
 def load_data(file_path):
     """

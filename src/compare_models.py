@@ -4,9 +4,9 @@ from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, e
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 import xgboost as xgb
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM, Bidirectional
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import Sequential # type: ignore
+from tensorflow.keras.layers import Dense, LSTM, Bidirectional # type: ignore
+from keras.optimizers import Adam # type: ignore
 
 # Chargement des données
 df = pd.read_csv('../data/processed/final_enriched_data.csv')
