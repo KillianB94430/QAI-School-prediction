@@ -1,13 +1,17 @@
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score
 import mlflow
 import mlflow.sklearn
 import numpy as np
 from sklearn.impute import SimpleImputer
 import joblib
+import xgboost as xgb
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, LSTM, Bidirectional
+from tensorflow.keras.optimizers import Adam
+
 def load_data(file_path):
     """
     Charge les données enrichies depuis un fichier CSV.
@@ -36,10 +40,20 @@ def evaluate_model(model, X_train, X_test, y_train, y_test):
         "r2": r2
     }
 
-def train_and_optimize_model(data_path):
-    global best_rf_model  # Declare as global to make it accessible outside the function
+def create_bilstm_model(input_shape):
     """
-    Entraîne un modèle de machine learning avec validation croisée et optimisation des hyperparamètres.
+    Crée un modèle BiLSTM.
+    """
+    model = Sequential([
+        Bidirectional(LSTM(64, activation='relu'), input_shape=input_shape),
+        Dense(1)
+    ])
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
+    return model
+
+def train_and_compare_models(data_path):
+    """
+    Entraîne et compare plusieurs modèles, sauvegarde le meilleur dans MLflow.
     """
     # Charger les données
     print(f"Chargement des données depuis {data_path}...")
@@ -49,25 +63,24 @@ def train_and_optimize_model(data_path):
     X = data[['CO2', 'Humedad', 'PM2.5', 'Temperatura']]
     y = data['health_score']
 
-    # Gérer les valeurs manquantes avec SimpleImputer
-    print("Imputation des valeurs manquantes...")
-    imputer = SimpleImputer(strategy='mean')  # Remplir les NaN avec la moyenne
-    X = imputer.fit_transform(X)
-
-    # Diviser les données en ensembles d'entraînement et de test
-    # Division temporelle : 80% pour l'entraînement, 20% pour le test
-    train_size = int(0.8 * len(data_path))
+  # Diviser les données en ensembles d'entraînement et de test
+    train_size = int(0.8 * len(data))
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:]
 
-    # Modèle de base : Random Forest
+    # Normalisation pour BiLSTM
+    X_train_dl = X_train.to_numpy().reshape((X_train.shape[0], X_train.shape[1], 1))
+    X_test_dl = X_test.to_numpy().reshape((X_test.shape[0], X_test.shape[1], 1))
+
+    # Modèle Random Forest
     print("Validation croisée avec Random Forest...")
     rf_model = RandomForestRegressor(random_state=42)
-    cv_scores = cross_val_score(rf_model, X_train, y_train, cv=5, scoring='r2')
-    print(f"Scores de validation croisée (R²) : {cv_scores}")
-    print(f"Score moyen (R²) : {cv_scores.mean():.2f}")
-
-    # Optimisation des hyperparamètres avec GridSearchCV
+    param_grid = {
+        'n_estimators': [50, 100],
+        'max_depth': [None, 10],
+        'min_samples_split': [2, 5]
+    }
+ # Optimisation des hyperparamètres avec GridSearchCV
     print("Optimisation des hyperparamètres avec GridSearchCV...")
     param_grid = {
         'n_estimators': [50, 100],
@@ -79,43 +92,61 @@ def train_and_optimize_model(data_path):
 
     print(f"Meilleurs hyperparamètres : {grid_search.best_params_}")
     best_rf_model = grid_search.best_estimator_
-
-    # Évaluation du modèle optimisé
-    print("Évaluation du modèle optimisé...")
     rf_metrics = evaluate_model(best_rf_model, X_train, X_test, y_train, y_test)
-    print(f"Random Forest - MSE : {rf_metrics['mse']:.2f}, RMSE : {rf_metrics['rmse']:.2f}, "
-          f"MAE : {rf_metrics['mae']:.2f}, Explained Variance : {rf_metrics['explained_variance']:.2f}, "
-          f"R² : {rf_metrics['r2']:.2f}")
 
-    # Comparaison avec un autre modèle : Régression Linéaire
-    print("Comparaison avec un modèle de Régression Linéaire...")
-    lr_model = LinearRegression()
-    lr_metrics = evaluate_model(lr_model, X_train, X_test, y_train, y_test)
-    print(f"Régression Linéaire - MSE : {lr_metrics['mse']:.2f}, RMSE : {lr_metrics['rmse']:.2f}, "
-          f"MAE : {lr_metrics['mae']:.2f}, Explained Variance : {lr_metrics['explained_variance']:.2f}, "
-          f"R² : {lr_metrics['r2']:.2f}")
+    # Modèle XGBoost
+    print("Entraînement avec XGBoost...")
+    xgb_model = xgb.XGBRegressor()
+    xgb_metrics = evaluate_model(xgb_model, X_train, X_test, y_train, y_test)
 
-    # Suivi avec MLflow
+    # Modèle BiLSTM
+    print("Entraînement avec BiLSTM...")
+    bilstm_model = create_bilstm_model((X_train_dl.shape[1], X_train_dl.shape[2]))
+    bilstm_model.fit(X_train_dl, y_train, epochs=10, batch_size=32, verbose=0)
+    bilstm_predictions = bilstm_model.predict(X_test_dl).flatten()
+    bilstm_metrics = {
+        "mse": mean_squared_error(y_test, bilstm_predictions),
+        "rmse": np.sqrt(mean_squared_error(y_test, bilstm_predictions)),
+        "mae": mean_absolute_error(y_test, bilstm_predictions),
+        "explained_variance": explained_variance_score(y_test, bilstm_predictions),
+        "r2": r2_score(y_test, bilstm_predictions)
+    }
+
+    # Comparaison des modèles
+    print("\nComparaison des modèles...")
+    models_metrics = {
+        "Random Forest": rf_metrics,
+        "XGBoost": xgb_metrics,
+        "BiLSTM": bilstm_metrics
+    }
+    best_model_name = max(models_metrics, key=lambda name: models_metrics[name]['r2'])
+    best_model_metrics = models_metrics[best_model_name]
+
+    print(f"Meilleur modèle : {best_model_name} avec R² = {best_model_metrics['r2']:.2f}")
+    return models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model
+
+def log_model_to_mlflow(models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model):
+    """
+    Enregistre les métriques et le meilleur modèle dans MLflow.
+    """
+    mlflow.set_experiment("default_experiment")  # Définit ou crée une expérience appelée "default_experiment"
+
     with mlflow.start_run():
-        # Enregistrer les métriques du modèle Random Forest optimisé
-        for metric_name, metric_value in rf_metrics.items():
-            mlflow.log_metric(f"rf_{metric_name}", metric_value)
+        for model_name, metrics in models_metrics.items():
+            for metric_name, metric_value in metrics.items():
+                mlflow.log_metric(f"{model_name}_{metric_name}", metric_value)
 
-        # Enregistrer les métriques du modèle de Régression Linéaire
-        for metric_name, metric_value in lr_metrics.items():
-            mlflow.log_metric(f"lr_{metric_name}", metric_value)
+        if best_model_name == "Random Forest":
+            mlflow.sklearn.log_model(best_rf_model, "best_model")
+        elif best_model_name == "XGBoost":
+            mlflow.sklearn.log_model(xgb_model, "best_model")
+        elif best_model_name == "BiLSTM":
+            bilstm_model.save("best_model")
+            mlflow.log_artifact("best_model")
 
-        # Enregistrer le meilleur modèle Random Forest
-        mlflow.sklearn.log_model(best_rf_model, "optimized_random_forest_model")
-        print("Modèle optimisé enregistré avec succès dans MLflow.")
+        print(f"Meilleur modèle ({best_model_name}) enregistré avec succès dans MLflow.")
 
 if __name__ == "__main__":
-    # Chemin vers les données enrichies
     data_csv = "../data/processed/final_enriched_data.csv"
-
-    best_rf_model = train_and_optimize_model(data_csv)
-    train_and_optimize_model(data_csv)
-    # Sauvegarder le modèle optimisé localement
-    model_save_path = "../models/optimized_random_forest_model.pkl"
-    joblib.dump(best_rf_model, model_save_path)
-    print(f"Modèle optimisé sauvegardé localement à l'emplacement : {model_save_path}")
+    models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model = train_and_compare_models(data_csv)
+    log_model_to_mlflow(models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model)

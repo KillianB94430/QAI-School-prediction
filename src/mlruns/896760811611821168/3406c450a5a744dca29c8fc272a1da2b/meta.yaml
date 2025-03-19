@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/killian/Desktop/QAI-School-prediction/src/mlruns/896760811611821168/3406c450a5a744dca29c8fc272a1da2b/artifacts
+end_time: 1742407238247
+entry_point_name: ''
+experiment_id: '896760811611821168'
+lifecycle_stage: active
+run_id: 3406c450a5a744dca29c8fc272a1da2b
+run_name: delicate-bear-888
+run_uuid: 3406c450a5a744dca29c8fc272a1da2b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742407227470
+status: 3
+tags: []
+user_id: killian

@@ -1,6 +1,6 @@
 import pandas as pd
 import joblib
-
+import mlflow.pyfunc
 def load_data(file_path):
     """
     Charge les données d'entrée depuis un fichier CSV.
@@ -21,12 +21,12 @@ def filter_data_by_date_range(data, start_date, end_date):
     print(f"{len(filtered_data)} lignes sélectionnées après filtrage.")
     return filtered_data
 
-def load_model(model_path):
+def load_model(model_uri):
     """
-    Charge un modèle sauvegardé localement depuis un fichier .pkl.
+    Charge un modèle sauvegardé dans MLflow à partir de son URI.
     """
-    print(f"Chargement du modèle depuis {model_path}...")
-    model = joblib.load(model_path)
+    print(f"Chargement du modèle depuis {model_uri}...")
+    model = mlflow.pyfunc.load_model(model_uri)
     return model
 
 def make_predictions(model, data):
@@ -50,13 +50,12 @@ def save_predictions(predictions, original_data, output_path):
 
 if __name__ == "__main__":
     # Chemin vers les données d'entrée
-    input_csv = "../data/processed/final_enriched_data.csv"  
-    output_csv = "../data/processed/inference_predictions.csv" # Chemin vers le fichier de sortie
+    input_csv = "../data/processed/intermediate_data.csv"  
+    output_csv = "../data/processed/inference_predictions.csv"  # Chemin vers le fichier de sortie
 
-    # Chemin vers le modèle sauvegardé
-    model_path = "../models/optimized_random_forest_model.pkl"
-
-    # Intervalle de dates pour  effectuer des prédictions
+    # URI du modèle sauvegardé dans MLflow
+    model_uri = "runs:/3406c450a5a744dca29c8fc272a1da2b/best_model"
+    # Intervalle de dates pour effectuer des prédictions
     start_date = "2024-06-20"
     end_date = "2024-06-28"
 
@@ -70,10 +69,10 @@ if __name__ == "__main__":
     features = filtered_data[['CO2', 'Humedad', 'PM2.5', 'Temperatura']]
 
     # Charger le modèle
-    model = load_model(model_path)
+    model = load_model(model_uri)
 
     # Effectuer les prédictions
-    predictions = make_predictions(model, features)
+    predictions = model.predict(features)
 
     # Sauvegarder les prédictions avec time_stamp et ID
     save_predictions(predictions, filtered_data, output_csv)

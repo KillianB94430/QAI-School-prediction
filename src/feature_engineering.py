@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+
 
 def calculate_health_score(row):
     """
@@ -22,18 +22,24 @@ def generate_features(input_path, output_path):
     # Charger les données
     df = pd.read_csv(input_path)
 
-    # Remplir les valeurs manquantes avec des moyennes (ou une autre stratégie)
+    # Remplir les valeurs manquantes avec des moyennes 
     df['Humedad'] = df['Humedad'].fillna(df['Humedad'].mean())
     df['PM2.5'] = df['PM2.5'].fillna(df['PM2.5'].mean())
     df['Temperatura'] = df['Temperatura'].fillna(df['Temperatura'].mean())
     df['CO2'] = df['CO2'].fillna(df['CO2'].mean())
+
+    # Sauvegarder les données après traitement des valeurs manquantes
+    intermediate_csv = "../data/processed/intermediate_data.csv"
+    df.to_csv(intermediate_csv, index=False)
+    print(f"Données intermédiaires sauvegardées dans {intermediate_csv}")
+
     # Calculer le score de santé
     df['health_score'] = df.apply(calculate_health_score, axis=1)
 
     # Sauvegarder les données enrichies
     df.to_csv(output_path, index=False)
     print(f"Données enrichies sauvegardées dans {output_path}")
-
+    
 if __name__ == "__main__":
     input_csv = "../data/raw/final_merged_data.csv"
     output_csv = "../data/processed/final_enriched_data.csv"
