@@ -1,16 +1,10 @@
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score
+from sklearn.model_selection import RandomizedSearchCV
 import mlflow
 import mlflow.sklearn
 import numpy as np
-from sklearn.impute import SimpleImputer
-import joblib
 import xgboost as xgb
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM, Bidirectional
-from tensorflow.keras.optimizers import Adam
 
 def load_data(file_path):
     """
@@ -40,20 +34,37 @@ def evaluate_model(model, X_train, X_test, y_train, y_test):
         "r2": r2
     }
 
-def create_bilstm_model(input_shape):
+def optimize_xgboost(X_train, y_train):
     """
-    Crée un modèle BiLSTM.
+    Effectue une recherche d'hyperparamètres pour XGBoost.
     """
-    model = Sequential([
-        Bidirectional(LSTM(64, activation='relu'), input_shape=input_shape),
-        Dense(1)
-    ])
-    model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
-    return model
+    param_dist = {
+        "n_estimators": [50, 100, 200],
+        "max_depth": [3, 5, 10],
+        "learning_rate": [0.01, 0.1, 0.2],
+        "subsample": [0.6, 0.8, 1.0],
+        "colsample_bytree": [0.6, 0.8, 1.0]
+    }
 
-def train_and_compare_models(data_path):
+    xgb_model = xgb.XGBRegressor()
+    random_search = RandomizedSearchCV(
+        estimator=xgb_model,
+        param_distributions=param_dist,
+        n_iter=10,  # Nombre d'itérations pour la recherche
+        scoring="r2",
+        cv=3,
+        verbose=1,
+        n_jobs=-1,
+        random_state=42
+    )
+    random_search.fit(X_train, y_train)
+
+    print(f"Meilleurs hyperparamètres : {random_search.best_params_}")
+    return random_search.best_estimator_
+
+def train_and_evaluate_xgboost(data_path):
     """
-    Entraîne et compare plusieurs modèles, sauvegarde le meilleur dans MLflow.
+    Entraîne et évalue le modèle XGBoost, puis sauvegarde le modèle et ses métriques dans MLflow.
     """
     # Charger les données
     print(f"Chargement des données depuis {data_path}...")
@@ -63,92 +74,45 @@ def train_and_compare_models(data_path):
     X = data[['CO2', 'Humedad', 'PM2.5', 'Temperatura']]
     y = data['health_score']
 
-  # Diviser les données en ensembles d'entraînement et de test
+    # Diviser les données en ensembles d'entraînement et de test
     train_size = int(0.8 * len(data))
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:]
 
-    # Normalisation pour BiLSTM
-    X_train_dl = X_train.to_numpy().reshape((X_train.shape[0], X_train.shape[1], 1))
-    X_test_dl = X_test.to_numpy().reshape((X_test.shape[0], X_test.shape[1], 1))
+    # Optimisation des hyperparamètres pour XGBoost
+    print("Optimisation des hyperparamètres pour XGBoost...")
+    best_xgb_model = optimize_xgboost(X_train, y_train)
 
-    # Modèle Random Forest
-    print("Validation croisée avec Random Forest...")
-    rf_model = RandomForestRegressor(random_state=42)
-    param_grid = {
-        'n_estimators': [50, 100],
-        'max_depth': [None, 10],
-        'min_samples_split': [2, 5]
-    }
- # Optimisation des hyperparamètres avec GridSearchCV
-    print("Optimisation des hyperparamètres avec GridSearchCV...")
-    param_grid = {
-        'n_estimators': [50, 100],
-        'max_depth': [None, 10],
-        'min_samples_split': [2, 5]
-    }
-    grid_search = GridSearchCV(estimator=rf_model, param_grid=param_grid, cv=5, scoring='r2', n_jobs=-1)
-    grid_search.fit(X_train, y_train)
+    # Évaluation du modèle optimisé
+    xgb_metrics = evaluate_model(best_xgb_model, X_train, X_test, y_train, y_test)
 
-    print(f"Meilleurs hyperparamètres : {grid_search.best_params_}")
-    best_rf_model = grid_search.best_estimator_
-    rf_metrics = evaluate_model(best_rf_model, X_train, X_test, y_train, y_test)
+    print("\n📊 Résultats du modèle XGBoost optimisé :")
+    print(f"R² : {xgb_metrics['r2']:.2f}")
+    print(f"MSE : {xgb_metrics['mse']:.2f}")
+    print(f"RMSE : {xgb_metrics['rmse']:.2f}")
+    print(f"MAE : {xgb_metrics['mae']:.2f}")
+    print(f"Explained Variance : {xgb_metrics['explained_variance']:.2f}")
 
-    # Modèle XGBoost
-    print("Entraînement avec XGBoost...")
-    xgb_model = xgb.XGBRegressor()
-    xgb_metrics = evaluate_model(xgb_model, X_train, X_test, y_train, y_test)
+    # Sauvegarder le modèle et les métriques dans MLflow
+    log_xgboost_to_mlflow(best_xgb_model, xgb_metrics)
 
-    # Modèle BiLSTM
-    print("Entraînement avec BiLSTM...")
-    bilstm_model = create_bilstm_model((X_train_dl.shape[1], X_train_dl.shape[2]))
-    bilstm_model.fit(X_train_dl, y_train, epochs=10, batch_size=32, verbose=0)
-    bilstm_predictions = bilstm_model.predict(X_test_dl).flatten()
-    bilstm_metrics = {
-        "mse": mean_squared_error(y_test, bilstm_predictions),
-        "rmse": np.sqrt(mean_squared_error(y_test, bilstm_predictions)),
-        "mae": mean_absolute_error(y_test, bilstm_predictions),
-        "explained_variance": explained_variance_score(y_test, bilstm_predictions),
-        "r2": r2_score(y_test, bilstm_predictions)
-    }
-
-    # Comparaison des modèles
-    print("\nComparaison des modèles...")
-    models_metrics = {
-        "Random Forest": rf_metrics,
-        "XGBoost": xgb_metrics,
-        "BiLSTM": bilstm_metrics
-    }
-    best_model_name = max(models_metrics, key=lambda name: models_metrics[name]['r2'])
-    best_model_metrics = models_metrics[best_model_name]
-
-    print(f"Meilleur modèle : {best_model_name} avec R² = {best_model_metrics['r2']:.2f}")
-    return models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model
-
-mlflow.set_tracking_uri("../mlruns")  # Chemin vers le répertoire MLflow
-
-def log_model_to_mlflow(models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model):
+def log_xgboost_to_mlflow(model, metrics):
     """
-    Enregistre les métriques et le meilleur modèle dans MLflow.
+    Enregistre le modèle XGBoost et ses métriques dans MLflow.
     """
-    mlflow.set_experiment("best_model")  # Définit ou crée une expérience appelée "default_experiment"
+    mlflow.set_tracking_uri("../mlruns")  # Chemin vers le répertoire MLflow
+    mlflow.set_experiment("best_model")  # Définit ou crée une expérience appelée "best_model"
 
     with mlflow.start_run():
-        for model_name, metrics in models_metrics.items():
-            for metric_name, metric_value in metrics.items():
-                mlflow.log_metric(f"{model_name}_{metric_name}", metric_value)
+        # Enregistrer les métriques
+        for metric_name, metric_value in metrics.items():
+            mlflow.log_metric(metric_name, metric_value)
 
-        if best_model_name == "Random Forest":
-            mlflow.sklearn.log_model(best_rf_model, "best_model")
-        elif best_model_name == "XGBoost":
-            mlflow.sklearn.log_model(xgb_model, "best_model")
-        elif best_model_name == "BiLSTM":
-            bilstm_model.save("best_model")
-            mlflow.log_artifact("best_model")
+        # Enregistrer le modèle
+        mlflow.sklearn.log_model(model, "best_model")
 
-        print(f"Meilleur modèle ({best_model_name}) enregistré avec succès dans MLflow.")
+        print("✅ Modèle XGBoost optimisé enregistré avec succès dans MLflow.")
 
 if __name__ == "__main__":
     data_csv = "../../data/processed/final_enriched_data.csv"
-    models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model = train_and_compare_models(data_csv)
-    log_model_to_mlflow(models_metrics, best_model_name, best_rf_model, xgb_model, bilstm_model)
+    train_and_evaluate_xgboost(data_csv)

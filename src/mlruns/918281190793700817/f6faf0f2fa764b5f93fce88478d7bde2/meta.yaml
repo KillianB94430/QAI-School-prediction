@@ -1,0 +1,15 @@
+artifact_uri: /Users/killian/Desktop/QAI-School-prediction/src/training_pipeline/../mlruns/918281190793700817/f6faf0f2fa764b5f93fce88478d7bde2/artifacts
+end_time: 1742477284489
+entry_point_name: ''
+experiment_id: '918281190793700817'
+lifecycle_stage: active
+run_id: f6faf0f2fa764b5f93fce88478d7bde2
+run_name: auspicious-tern-257
+run_uuid: f6faf0f2fa764b5f93fce88478d7bde2
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742477281260
+status: 3
+tags: []
+user_id: killian

@@ -1,0 +1,15 @@
+artifact_uri: /Users/killian/Desktop/QAI-School-prediction/src/training_pipeline/../mlruns/918281190793700817/962242efd6f54587aaa018c9afd7fe1b/artifacts
+end_time: 1742476425758
+entry_point_name: ''
+experiment_id: '918281190793700817'
+lifecycle_stage: active
+run_id: 962242efd6f54587aaa018c9afd7fe1b
+run_name: calm-penguin-708
+run_uuid: 962242efd6f54587aaa018c9afd7fe1b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742476421145
+status: 3
+tags: []
+user_id: killian

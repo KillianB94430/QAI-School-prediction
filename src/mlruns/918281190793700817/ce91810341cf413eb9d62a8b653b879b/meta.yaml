@@ -1,0 +1,15 @@
+artifact_uri: /Users/killian/Desktop/QAI-School-prediction/src/training_pipeline/../mlruns/918281190793700817/ce91810341cf413eb9d62a8b653b879b/artifacts
+end_time: 1742474383156
+entry_point_name: ''
+experiment_id: '918281190793700817'
+lifecycle_stage: active
+run_id: ce91810341cf413eb9d62a8b653b879b
+run_name: overjoyed-sow-278
+run_uuid: ce91810341cf413eb9d62a8b653b879b
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742474378837
+status: 3
+tags: []
+user_id: killian

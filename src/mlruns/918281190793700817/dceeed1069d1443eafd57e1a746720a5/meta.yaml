@@ -1,0 +1,15 @@
+artifact_uri: /Users/killian/Desktop/QAI-School-prediction/src/training_pipeline/../mlruns/918281190793700817/dceeed1069d1443eafd57e1a746720a5/artifacts
+end_time: 1742477063662
+entry_point_name: ''
+experiment_id: '918281190793700817'
+lifecycle_stage: active
+run_id: dceeed1069d1443eafd57e1a746720a5
+run_name: intelligent-fawn-838
+run_uuid: dceeed1069d1443eafd57e1a746720a5
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742477058067
+status: 3
+tags: []
+user_id: killian

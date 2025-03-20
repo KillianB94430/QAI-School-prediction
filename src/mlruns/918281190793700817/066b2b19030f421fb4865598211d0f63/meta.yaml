@@ -1,0 +1,15 @@
+artifact_uri: /Users/killian/Desktop/QAI-School-prediction/src/training_pipeline/../mlruns/918281190793700817/066b2b19030f421fb4865598211d0f63/artifacts
+end_time: 1742474074608
+entry_point_name: ''
+experiment_id: '918281190793700817'
+lifecycle_stage: active
+run_id: 066b2b19030f421fb4865598211d0f63
+run_name: stylish-rat-182
+run_uuid: 066b2b19030f421fb4865598211d0f63
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742474066859
+status: 3
+tags: []
+user_id: killian

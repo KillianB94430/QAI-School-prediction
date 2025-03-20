@@ -2,6 +2,7 @@ import pandas as pd
 import mlflow.pyfunc
 import mlflow
 from mlflow.tracking import MlflowClient
+import sys
 def load_data(file_path):
     """
     Charge les données d'entrée depuis un fichier CSV.
@@ -83,16 +84,18 @@ if __name__ == "__main__":
 
     # Nom de l'expérience MLflow
     mlflow.set_tracking_uri("../mlruns")
-    experiment_name = "best_model"  # Remplacez par le nom de votre expérience
+    experiment_name = "best_model" 
     # Récupérer l'URI du modèle le plus récent
     model_uri = get_latest_model_uri(experiment_name)
 
     print(f"Utilisation du modèle le plus récent : {model_uri}")
 
-    # Demander à l'utilisateur de saisir l'intervalle de dates
-    print("\nVeuillez entrer l'intervalle de dates pour effectuer les prédictions.")
-    start_date = input("Date de début (format YYYY-MM-DD) : ")
-    end_date = input("Date de fin (format YYYY-MM-DD) : ")
+    # Récupération des arguments passés par main.py
+    if len(sys.argv) >= 3:
+        start_date = sys.argv[1]
+        end_date = sys.argv[2]
+    else:
+        raise ValueError("⚠️ Les dates de début et de fin sont requises en argument.")
 
     # Charger les données
     data = load_data(input_csv)
