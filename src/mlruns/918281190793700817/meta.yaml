@@ -1,0 +1,6 @@
+artifact_location: /Users/killian/Desktop/QAI-School-prediction/src/training_pipeline/../mlruns/918281190793700817
+creation_time: 1742413920987
+experiment_id: '918281190793700817'
+last_update_time: 1742413920987
+lifecycle_stage: active
+name: best_model

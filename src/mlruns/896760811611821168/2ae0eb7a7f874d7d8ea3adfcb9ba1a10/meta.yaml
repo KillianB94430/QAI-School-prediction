@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/killian/Desktop/QAI-School-prediction/src/mlruns/896760811611821168/2ae0eb7a7f874d7d8ea3adfcb9ba1a10/artifacts
+end_time: 1742412063228
+entry_point_name: ''
+experiment_id: '896760811611821168'
+lifecycle_stage: active
+run_id: 2ae0eb7a7f874d7d8ea3adfcb9ba1a10
+run_name: worried-perch-322
+run_uuid: 2ae0eb7a7f874d7d8ea3adfcb9ba1a10
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1742412054902
+status: 3
+tags: []
+user_id: killian
