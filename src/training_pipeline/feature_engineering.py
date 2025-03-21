@@ -12,7 +12,7 @@ def calculate_health_score(row):
     temperatura_score = 100 if 20 <= row['Temperatura'] <= 25 else max(0, 100 - abs(row['Temperatura'] - 22.5) * 10)
 
     # Moyenne pondérée des scores
-    health_score = (0.4 * co2_score + 0.2 * humedad_score + 0.3 * pm25_score + 0.1 * temperatura_score)
+    health_score = (0.3* co2_score + 0.2 * humedad_score + 0.4 * pm25_score + 0.1 * temperatura_score)
     return round(health_score, 2)
 
 def generate_features(input_path, output_path):
