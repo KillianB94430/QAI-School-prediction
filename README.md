@@ -41,12 +41,11 @@ Les prédictions seront sauvegardées dans `data/processed/inference_predictions
 ```
 QAI-School-prediction/
 │── data/                   # Données brutes et traitées
-│── notebooks/              # Notebooks Jupyter pour l'analyse exploratoire
 │── src/                    # Scripts d'entraînement et d'inférence
-│   │── model_training.py   # Entraînement et sauvegarde des modèles
+│   │── training_pipeline/  # Entraînement et sauvegarde des modèles
 │   │── inference_pipeline/ # Scripts d'inférence
-│── models/                 # Modèles sauvegardés
-│── mlruns/                 # Expériences MLflow
+    │── main.py             # Modèles sauvegardés
+    │── mlruns/             # Expériences MLflow
 │── requirements.txt        # Dépendances du projet
 │── README.md               # Documentation
 ```
