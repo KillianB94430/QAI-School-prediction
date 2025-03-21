@@ -42,8 +42,8 @@ Les prédictions seront sauvegardées dans `data/processed/inference_predictions
 QAI-School-prediction/
 │── data/                   # Données brutes et traitées
 │── src/                    # Scripts d'entraînement et d'inférence
-│   │── training_pipeline/  # Entraînement et sauvegarde des modèles
-│   │── inference_pipeline/ # Scripts d'inférence
+    │── training_pipeline/  # Entraînement et sauvegarde des modèles
+    │── inference_pipeline/ # Scripts d'inférence
     │── main.py             # Modèles sauvegardés
     │── mlruns/             # Expériences MLflow
 │── requirements.txt        # Dépendances du projet
